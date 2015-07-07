@@ -1,17 +1,17 @@
-# MaterialDesignLite for Rails
+# Material Design Lite, for Rails!
 
 A gemified version of
 [`googe/material-design-lite`](https://github.com/google/material-design-lite).
 
 ## Installation
 
-Add this line to your Rails application's Gemfile:
+To your Rails application's Gemfile, add
 
 ```ruby
 gem 'material_design_lite-rails'
 ```
 
-And then execute:
+And then run
 
     $ bundle
 
@@ -27,7 +27,7 @@ To your `application.js` file, add:
 
 Do one of the following:
 
-To your `application.css` , add:
+To your `application.css` , add
 ```
   *= require material
 ```
@@ -48,7 +48,8 @@ in line with
 
 If there needs to be a release of this gem without a corresponding release to
 `google/material-design-lite'` to the repo, an additional digit will be added
-(so an additional release of this gem `1.0.0.1`).
+(so if this gem's version is `1.0.0.1`, google's version would still be `1.0.0`).
+
 The first three digits will always be the same as `google/material-design-lite`.
 
 ## TODO:
