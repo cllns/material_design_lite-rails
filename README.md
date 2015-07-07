@@ -31,7 +31,9 @@ To your `application.css` , add
   *= require material
 ```
 
-or, if you're using sass, use sass's
+**OR**
+
+If you're using sass, use sass's
 [`@import`](https://github.com/rails/sass-rails#important-note)
 in your `application.scss`.
 
@@ -40,15 +42,21 @@ in your `application.scss`.
 ```
 
 #### Icons
-Material Design Lite uses a font called 'Material Icons', which is hosted by Google.
+Material Design Lite uses a font called 'Material Icons'.
+You can either load this font from google, or host it yourself.
 
-To load this font, 
-add the following line to your `application.html.erb` view layout file, 
+##### Load font from google
+Add the following line to your `application.html.erb` view layout file, 
 in the `<head>` section:
 
 ```
   <%= stylesheet_link_tag "https://fonts.googleapis.com/icon?family=Material+Icons" %>
 ```
+
+**OR**
+
+##### Host font locally
+Use the `material_icons` gem to [host the font locally](https://github.com/Angelmmiguel/material_icons). 
 
 ## Versioning
 
