@@ -1,7 +1,6 @@
 # Material Design Lite, for Rails!
 
-A gemified version of
-[`googe/material-design-lite`](https://github.com/google/material-design-lite).
+A gemified version of [Google's Material Design Lite](http://www.getmdl.io/) library.
 
 ## Installation
 
@@ -15,7 +14,7 @@ And then run
 
     $ bundle
 
-### Javascripts
+#### Javascripts
 
 To your `application.js` file, add:
 
@@ -23,7 +22,7 @@ To your `application.js` file, add:
   //= require material
 ```
 
-### Stylesheets
+#### Stylesheets
 
 Do one of the following:
 
@@ -40,6 +39,17 @@ in your `application.scss`.
   @import "material";
 ```
 
+#### Icons
+Material Design Lite uses a font called 'Material Icons', which is hosted by Google.
+
+To load this font, 
+add the following line to your `application.html.erb` view layout file, 
+in the `<head>` section:
+
+```
+  <%= stylesheet_link_tag "https://fonts.googleapis.com/icon?family=Material+Icons" %>
+```
+
 ## Versioning
 
 This gem is versioned semantically,
@@ -54,7 +64,7 @@ The first three digits will always be the same as `google/material-design-lite`.
 
 ## TODO:
 
-- [ ] Add tests (make sure CSS/JS loads, and check version?)
+- [ ] Add tests (make sure CSS/JS loads, and check version)
 - [ ] Add view helpers, to ease burden of manually adding all the classes.
 
 ## Contributing
