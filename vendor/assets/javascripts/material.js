@@ -17,7 +17,7 @@
 
 /**
  * A component handler interface using the revealing module design pattern.
- * More details on this pattern design here:
+ * More details on this design pattern here:
  * https://github.com/jasonmayes/mdl-component-design-pattern
  * @author Jason Mayes.
  */
@@ -34,8 +34,8 @@ var componentHandler = (function() {
    * Searches registered components for a class we are interested in using.
    * Optionally replaces a match with passed object if specified.
    * @param {string} name The name of a class we want to use.
-   * @param {object} optReplace Optional object to replace match with.
-   * @return {object | false}
+   * @param {Object=} optReplace Optional object to replace match with.
+   * @return {Object | boolean}
    * @private
    */
   function findRegisteredClass_(name, optReplace) {
@@ -51,28 +51,54 @@ var componentHandler = (function() {
   }
 
   /**
+   * Returns an array of the classNames of the upgraded classes on the element.
+   * @param {HTMLElement} element The element to fetch data from.
+   * @return {Array<string>}
+   * @private
+   */
+  function getUpgradedListOfElement_(element) {
+    var dataUpgraded = element.getAttribute('data-upgraded');
+    // Use `['']` as default value to conform the `,name,name...` style.
+    return dataUpgraded === null ? [''] : dataUpgraded.split(',');
+  }
+
+  /**
+   * Returns true if the given element has already been upgraded for the given
+   * class.
+   * @param {HTMLElement} element The element we want to check.
+   * @param {string} jsClass The class to check for.
+   * @return boolean
+   * @private
+   */
+  function isElementUpgraded_(element, jsClass) {
+    var upgradedList = getUpgradedListOfElement_(element);
+    return upgradedList.indexOf(jsClass) !== -1;
+  }
+
+  /**
    * Searches existing DOM for elements of our component type and upgrades them
    * if they have not already been upgraded.
-   * @param {string} jsClass the programatic name of the element class we need
-   * to create a new instance of.
-   * @param {string} cssClass the name of the CSS class elements of this type
-   * will have.
+   * @param {!string=} optJsClass the programatic name of the element class we
+   * need to create a new instance of.
+   * @param {!string=} optCssClass the name of the CSS class elements of this
+   * type will have.
    */
-  function upgradeDomInternal(jsClass, cssClass) {
-    if (jsClass === undefined && cssClass === undefined) {
+  function upgradeDomInternal(optJsClass, optCssClass) {
+    if (optJsClass === undefined && optCssClass === undefined) {
       for (var i = 0; i < registeredComponents_.length; i++) {
         upgradeDomInternal(registeredComponents_[i].className,
             registeredComponents_[i].cssClass);
       }
     } else {
-      if (cssClass === undefined) {
+      var jsClass = /** @type {!string} */ (optJsClass);
+      if (optCssClass === undefined) {
         var registeredClass = findRegisteredClass_(jsClass);
         if (registeredClass) {
-          cssClass = registeredClass.cssClass;
+          optCssClass = registeredClass.cssClass;
         }
       }
 
-      var elements = document.querySelectorAll('.' + cssClass);
+      var elements = document.querySelectorAll('.' + optCssClass);
       for (var n = 0; n < elements.length; n++) {
         upgradeElementInternal(elements[n], jsClass);
       }
@@ -82,36 +108,54 @@ var componentHandler = (function() {
   /**
    * Upgrades a specific element rather than all in the DOM.
    * @param {HTMLElement} element The element we wish to upgrade.
-   * @param {string} jsClass The name of the class we want to upgrade
+   * @param {!string=} optJsClass Optional name of the class we want to upgrade
    * the element to.
    */
-  function upgradeElementInternal(element, jsClass) {
-    // Only upgrade elements that have not already been upgraded.
-    var dataUpgraded = element.getAttribute('data-upgraded');
+  function upgradeElementInternal(element, optJsClass) {
+    // Verify argument type.
+    if (!(typeof element === 'object' && element instanceof Element)) {
+      throw new Error('Invalid argument provided to upgrade MDL element.');
+    }
+    var upgradedList = getUpgradedListOfElement_(element);
+    var classesToUpgrade = [];
+    // If jsClass is not provided scan the registered components to find the
+    // ones matching the element's CSS classList.
+    if (!optJsClass) {
+      var classList = element.classList;
+      registeredComponents_.forEach(function (component) {
+        // Match CSS & Not to be upgraded & Not upgraded.
+        if (classList.contains(component.cssClass) &&
+            classesToUpgrade.indexOf(component) === -1 &&
+            !isElementUpgraded_(element, component.className)) {
+          classesToUpgrade.push(component);
+        }
+      });
+    } else if (!isElementUpgraded_(element, optJsClass)) {
+      classesToUpgrade.push(findRegisteredClass_(optJsClass));
+    }
 
-    if (dataUpgraded === null || dataUpgraded.indexOf(jsClass) === -1) {
-      // Upgrade element.
-      if (dataUpgraded === null) {
-        dataUpgraded = '';
-      }
-      element.setAttribute('data-upgraded', dataUpgraded + ',' + jsClass);
-      var registeredClass = findRegisteredClass_(jsClass);
+    // Upgrade the element for each classes.
+    for (var i = 0, n = classesToUpgrade.length, registeredClass; i < n; i++) {
+      registeredClass = classesToUpgrade[i];
       if (registeredClass) {
-        // new
+        // Mark element as upgraded.
+        upgradedList.push(registeredClass.className);
+        element.setAttribute('data-upgraded', upgradedList.join(','));
         var instance = new registeredClass.classConstructor(element);
         instance[componentConfigProperty_] = registeredClass;
         createdComponents_.push(instance);
         // Call any callbacks the user has registered with this component type.
-        registeredClass.callbacks.forEach(function(callback) {
-          callback(element);
-        });
+        for (var j = 0, m = registeredClass.callbacks.length; j < m; j++) {
+          registeredClass.callbacks[j](element);
+        }
 
         if (registeredClass.widget) {
           // Assign per element instance for control over API
-          element[jsClass] = instance;
+          element[registeredClass.className] = instance;
         }
       } else {
-        throw 'Unable to find a registered component for the given class.';
+        throw new Error(
+          'Unable to find a registered component for the given class.');
       }
 
       var ev = document.createEvent('Events');
@@ -121,8 +165,32 @@ var componentHandler = (function() {
   }
 
   /**
+   * Upgrades a specific list of elements rather than all in the DOM.
+   * @param {HTMLElement | Array<HTMLElement> | NodeList | HTMLCollection} elements
+   * The elements we wish to upgrade.
+   */
+  function upgradeElementsInternal(elements) {
+    if (!Array.isArray(elements)) {
+      if (typeof elements.item === 'function') {
+        elements = Array.prototype.slice.call(elements);
+      } else {
+        elements = [elements];
+      }
+    }
+    for (var i = 0, n = elements.length, element; i < n; i++) {
+      element = elements[i];
+      if (element instanceof HTMLElement) {
+        if (element.children.length > 0) {
+          upgradeElementsInternal(element.children);
+        }
+        upgradeElementInternal(element);
+      }
+    }
+  }
+
+  /**
    * Registers a class for future use and attempts to upgrade existing DOM.
-   * @param {object} config An object containing:
+   * @param {Object} config An object containing:
    * {constructor: Constructor, classAsString: string, cssClass: string}
    */
   function registerInternal(config) {
@@ -136,17 +204,18 @@ var componentHandler = (function() {
 
     registeredComponents_.forEach(function(item) {
       if (item.cssClass === newConfig.cssClass) {
-        throw 'The provided cssClass has already been registered.';
+        throw new Error('The provided cssClass has already been registered.');
       }
       if (item.className === newConfig.className) {
-        throw 'The provided className has already been registered';
+        throw new Error('The provided className has already been registered');
       }
     });
 
     if (config.constructor.prototype
         .hasOwnProperty(componentConfigProperty_)) {
-      throw 'MDL component classes must not have ' + componentConfigProperty_ +
-          ' defined as a property.';
+      throw new Error(
+        'MDL component classes must not have ' + componentConfigProperty_ +
+          ' defined as a property.');
     }
 
     var found = findRegisteredClass_(config.classAsString, newConfig);
@@ -161,7 +230,7 @@ var componentHandler = (function() {
    * component type
    * @param {string} jsClass The class name of the MDL component we wish
    * to hook into for any upgrades performed.
-   * @param {function} callback The function to call upon an upgrade. This
+   * @param {!Function} callback The function to call upon an upgrade. This
    * function should expect 1 parameter - the HTMLElement which got upgraded.
    */
   function registerUpgradedCallbackInternal(jsClass, callback) {
@@ -240,7 +309,7 @@ var componentHandler = (function() {
     } else if (nodes instanceof Node) {
       downgradeNode(nodes);
     } else {
-      throw 'Invalid argument provided to downgrade MDL nodes.';
+      throw new Error('Invalid argument provided to downgrade MDL nodes.');
     }
   }
 
@@ -249,6 +318,7 @@ var componentHandler = (function() {
   return {
     upgradeDom: upgradeDomInternal,
     upgradeElement: upgradeElementInternal,
+    upgradeElements: upgradeElementsInternal,
     upgradeAllRegistered: upgradeAllRegisteredInternal,
     registerUpgradedCallback: registerUpgradedCallbackInternal,
     register: registerInternal,
@@ -443,7 +513,8 @@ MaterialButton.prototype.mdlDowngrade_ = function() {
 componentHandler.register({
   constructor: MaterialButton,
   classAsString: 'MaterialButton',
-  cssClass: 'mdl-js-button'
+  cssClass: 'mdl-js-button',
+  widget: true
 });
 
 /**
@@ -708,7 +779,8 @@ MaterialCheckbox.prototype.mdlDowngrade_ = function() {
 componentHandler.register({
   constructor: MaterialCheckbox,
   classAsString: 'MaterialCheckbox',
-  cssClass: 'mdl-js-checkbox'
+  cssClass: 'mdl-js-checkbox',
+  widget: true
 });
 
 /**
@@ -956,7 +1028,8 @@ MaterialIconToggle.prototype.mdlDowngrade_ = function() {
 componentHandler.register({
   constructor: MaterialIconToggle,
   classAsString: 'MaterialIconToggle',
-  cssClass: 'mdl-js-icon-toggle'
+  cssClass: 'mdl-js-icon-toggle',
+  widget: true
 });
 
 /**
@@ -1299,7 +1372,9 @@ MaterialMenu.prototype.applyClip_ = function(height, width) {
 MaterialMenu.prototype.addAnimationEndListener_ = function() {
   'use strict';
 
-  var cleanup = function() {
+  var cleanup = function () {
+    this.element_.removeEventListener('transitionend', cleanup);
+    this.element_.removeEventListener('webkitTransitionEnd', cleanup);
     this.element_.classList.remove(this.CssClasses_.IS_ANIMATING);
   }.bind(this);
 
@@ -1422,7 +1497,8 @@ MaterialMenu.prototype.toggle = function(evt) {
 componentHandler.register({
   constructor: MaterialMenu,
   classAsString: 'MaterialMenu',
-  cssClass: 'mdl-js-menu'
+  cssClass: 'mdl-js-menu',
+  widget: true
 });
 
 /**
@@ -1523,12 +1599,23 @@ MaterialProgress.prototype.init = function() {
   }
 };
 
+/*
+* Downgrade the component
+*/
+MaterialProgress.prototype.mdlDowngrade_ = function() {
+  'use strict';
+  while (this.element_.firstChild) {
+    this.element_.removeChild(this.element_.firstChild);
+  }
+};
+
 // The component registers itself. It can assume componentHandler is available
 // in the global scope.
 componentHandler.register({
   constructor: MaterialProgress,
   classAsString: 'MaterialProgress',
-  cssClass: 'mdl-js-progress'
+  cssClass: 'mdl-js-progress',
+  widget: true
 });
 
 /**
@@ -1785,7 +1872,8 @@ MaterialRadio.prototype.init = function() {
 componentHandler.register({
   constructor: MaterialRadio,
   classAsString: 'MaterialRadio',
-  cssClass: 'mdl-js-radio'
+  cssClass: 'mdl-js-radio',
+  widget: true
 });
 
 /**
@@ -2037,7 +2125,8 @@ MaterialSlider.prototype.mdlDowngrade_ = function() {
 componentHandler.register({
   constructor: MaterialSlider,
   classAsString: 'MaterialSlider',
-  cssClass: 'mdl-js-slider'
+  cssClass: 'mdl-js-slider',
+  widget: true
 });
 
 /**
@@ -2177,7 +2266,8 @@ MaterialSpinner.prototype.init = function() {
 componentHandler.register({
   constructor: MaterialSpinner,
   classAsString: 'MaterialSpinner',
-  cssClass: 'mdl-js-spinner'
+  cssClass: 'mdl-js-spinner',
+  widget: true
 });
 
 /**
@@ -2446,7 +2536,8 @@ MaterialSwitch.prototype.mdlDowngrade_ = function() {
 componentHandler.register({
   constructor: MaterialSwitch,
   classAsString: 'MaterialSwitch',
-  cssClass: 'mdl-js-switch'
+  cssClass: 'mdl-js-switch',
+  widget: true
 });
 
 /**
@@ -2707,27 +2798,51 @@ MaterialTextfield.prototype.onBlur_ = function(event) {
  */
 MaterialTextfield.prototype.updateClasses_ = function() {
   'use strict';
+  this.checkDisabled();
+  this.checkValidity();
+  this.checkDirty();
+};
 
+// Public methods.
+
+/**
+ * Check the disabled state and update field accordingly.
+ * @public
+ */
+MaterialTextfield.prototype.checkDisabled = function() {
+  'use strict';
   if (this.input_.disabled) {
     this.element_.classList.add(this.CssClasses_.IS_DISABLED);
   } else {
     this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
   }
+};
 
+/**
+ * Check the validity state and update field accordingly.
+ * @public
+ */
+MaterialTextfield.prototype.checkValidity = function() {
+  'use strict';
   if (this.input_.validity.valid) {
     this.element_.classList.remove(this.CssClasses_.IS_INVALID);
   } else {
     this.element_.classList.add(this.CssClasses_.IS_INVALID);
   }
+};
 
+/**
+* Check the dirty state and update field accordingly.
+* @public
+*/
+MaterialTextfield.prototype.checkDirty = function() {
+  'use strict';
   if (this.input_.value && this.input_.value.length > 0) {
     this.element_.classList.add(this.CssClasses_.IS_DIRTY);
   } else {
     this.element_.classList.remove(this.CssClasses_.IS_DIRTY);
   }
 };
-
-// Public methods.
 
 /**
  * Disable text field.
@@ -2822,7 +2937,8 @@ MaterialTextfield.prototype.mdlDowngrade_ = function() {
 componentHandler.register({
   constructor: MaterialTextfield,
   classAsString: 'MaterialTextfield',
-  cssClass: 'mdl-js-textfield'
+  cssClass: 'mdl-js-textfield',
+  widget: true
 });
 
 /**
@@ -2887,10 +3003,21 @@ MaterialTooltip.prototype.handleMouseEnter_ = function(event) {
 
   event.stopPropagation();
   var props = event.target.getBoundingClientRect();
-  this.element_.style.left = props.left + (props.width / 2) + 'px';
-  this.element_.style.marginLeft = -1 * (this.element_.offsetWidth / 2) + 'px';
+  var left = props.left + (props.width / 2);
+  var marginLeft = -1 * (this.element_.offsetWidth / 2);
+
+  if (left + marginLeft < 0) {
+    this.element_.style.left = 0;
+    this.element_.style.marginLeft = 0;
+  } else {
+    this.element_.style.left = left + 'px';
+    this.element_.style.marginLeft = marginLeft + 'px';
+  }
+
   this.element_.style.top = props.top + props.height + 10 + 'px';
   this.element_.classList.add(this.CssClasses_.IS_ACTIVE);
+  window.addEventListener('scroll', this.boundMouseLeaveHandler, false);
+  window.addEventListener('touchmove', this.boundMouseLeaveHandler, false);
 };
 
 /**
@@ -2903,6 +3030,8 @@ MaterialTooltip.prototype.handleMouseLeave_ = function(event) {
 
   event.stopPropagation();
   this.element_.classList.remove(this.CssClasses_.IS_ACTIVE);
+  window.removeEventListener('scroll', this.boundMouseLeaveHandler);
+  window.removeEventListener('touchmove', this.boundMouseLeaveHandler, false);
 };
 
 /**
@@ -2919,11 +3048,19 @@ MaterialTooltip.prototype.init = function() {
     }
 
     if (this.forElement_) {
+      // Tabindex needs to be set for `blur` events to be emitted
+      if (!this.forElement_.getAttribute('tabindex')) {
+        this.forElement_.setAttribute('tabindex', '0');
+      }
+
       this.boundMouseEnterHandler = this.handleMouseEnter_.bind(this);
       this.boundMouseLeaveHandler = this.handleMouseLeave_.bind(this);
       this.forElement_.addEventListener('mouseenter', this.boundMouseEnterHandler,
           false);
       this.forElement_.addEventListener('click', this.boundMouseEnterHandler,
+          false);
+      this.forElement_.addEventListener('blur', this.boundMouseLeaveHandler);
+      this.forElement_.addEventListener('touchstart', this.boundMouseEnterHandler,
           false);
       this.forElement_.addEventListener('mouseleave', this.boundMouseLeaveHandler);
     }
@@ -2938,6 +3075,7 @@ MaterialTooltip.prototype.mdlDowngrade_ = function() {
   if (this.forElement_) {
     this.forElement_.removeEventListener('mouseenter', this.boundMouseEnterHandler, false);
     this.forElement_.removeEventListener('click', this.boundMouseEnterHandler, false);
+    this.forElement_.removeEventListener('touchstart', this.boundMouseEnterHandler, false);
     this.forElement_.removeEventListener('mouseleave', this.boundMouseLeaveHandler);
   }
 };
@@ -3053,7 +3191,11 @@ MaterialLayout.prototype.CssClasses_ = {
   IS_DRAWER_OPEN: 'is-visible',
   IS_ACTIVE: 'is-active',
   IS_UPGRADED: 'is-upgraded',
-  IS_ANIMATING: 'is-animating'
+  IS_ANIMATING: 'is-animating',
+
+  ON_LARGE_SCREEN : 'mdl-layout--large-screen-only',
+  ON_SMALL_SCREEN  : 'mdl-layout--small-screen-only'
+
 };
 
 /**
@@ -3238,6 +3380,14 @@ MaterialLayout.prototype.init = function() {
     if (this.drawer_) {
       var drawerButton = document.createElement('div');
       drawerButton.classList.add(this.CssClasses_.DRAWER_BTN);
+
+      if (this.drawer_.classList.contains(this.CssClasses_.ON_LARGE_SCREEN)) {
+        //If drawer has ON_LARGE_SCREEN class then add it to the drawer toggle button as well.
+        drawerButton.classList.add(this.CssClasses_.ON_LARGE_SCREEN);
+      } else if (this.drawer_.classList.contains(this.CssClasses_.ON_SMALL_SCREEN)) {
+        //If drawer has ON_SMALL_SCREEN class then add it to the drawer toggle button as well.
+        drawerButton.classList.add(this.CssClasses_.ON_SMALL_SCREEN);
+      }
       var drawerButtonIcon = document.createElement('i');
       drawerButtonIcon.classList.add(this.CssClasses_.ICON);
       drawerButtonIcon.textContent = this.Constant_.MENU_ICON;
