@@ -281,11 +281,11 @@ var componentHandler = (function() {
       var componentIndex = createdComponents_.indexOf(component);
       createdComponents_.splice(componentIndex, 1);
 
-      var upgrades = component.element_.dataset.upgraded.split(',');
+      var upgrades = component.element_.getAttribute('data-upgraded').split(',');
       var componentPlace = upgrades.indexOf(
           component[componentConfigProperty_].classAsString);
       upgrades.splice(componentPlace, 1);
-      component.element_.dataset.upgraded = upgrades.join(',');
+      component.element_.setAttribute('data-upgraded', upgrades.join(','));
 
       var ev = document.createEvent('Events');
       ev.initEvent('mdl-componentdowngraded', true, true);
@@ -633,18 +633,8 @@ MaterialCheckbox.prototype.onMouseUp_ = function(event) {
  */
 MaterialCheckbox.prototype.updateClasses_ = function() {
   'use strict';
-
-  if (this.inputElement_.disabled) {
-    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-  } else {
-    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-  }
-
-  if (this.inputElement_.checked) {
-    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-  } else {
-    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-  }
+  this.checkDisabled();
+  this.checkToggleState();
 };
 
 /**
@@ -662,6 +652,32 @@ MaterialCheckbox.prototype.blur_ = function(event) {
 };
 
 // Public methods.
+
+/**
+* Check the inputs toggle state and update display.
+* @public
+*/
+MaterialCheckbox.prototype.checkToggleState = function() {
+  'use strict';
+  if (this.inputElement_.checked) {
+    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
+  }
+};
+
+/**
+* Check the inputs disabled state and update display.
+* @public
+*/
+MaterialCheckbox.prototype.checkDisabled = function() {
+  'use strict';
+  if (this.inputElement_.disabled) {
+    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
+  }
+};
 
 /**
  * Disable checkbox.
@@ -895,18 +911,8 @@ MaterialIconToggle.prototype.onMouseUp_ = function(event) {
  */
 MaterialIconToggle.prototype.updateClasses_ = function() {
   'use strict';
-
-  if (this.inputElement_.disabled) {
-    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-  } else {
-    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-  }
-
-  if (this.inputElement_.checked) {
-    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-  } else {
-    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-  }
+  this.checkDisabled();
+  this.checkToggleState();
 };
 
 /**
@@ -924,6 +930,32 @@ MaterialIconToggle.prototype.blur_ = function(event) {
 };
 
 // Public methods.
+
+/**
+* Check the inputs toggle state and update display.
+* @public
+*/
+MaterialIconToggle.prototype.checkToggleState = function() {
+  'use strict';
+  if (this.inputElement_.checked) {
+    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
+  }
+};
+
+/**
+* Check the inputs disabled state and update display.
+* @public
+*/
+MaterialIconToggle.prototype.checkDisabled = function() {
+  'use strict';
+  if (this.inputElement_.disabled) {
+    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
+  }
+};
 
 /**
  * Disable icon toggle.
@@ -1690,8 +1722,6 @@ MaterialRadio.prototype.CssClasses_ = {
 MaterialRadio.prototype.onChange_ = function(event) {
   'use strict';
 
-  this.updateClasses_(this.btnElement_, this.element_);
-
   // Since other radio buttons don't get change events, we need to look for
   // them to update their classes.
   var radios = document.getElementsByClassName(this.CssClasses_.JS_RADIO);
@@ -1699,7 +1729,7 @@ MaterialRadio.prototype.onChange_ = function(event) {
     var button = radios[i].querySelector('.' + this.CssClasses_.RADIO_BTN);
     // Different name == different group, so no point updating those.
     if (button.getAttribute('name') === this.btnElement_.getAttribute('name')) {
-      this.updateClasses_(button, radios[i]);
+      radios[i].MaterialRadio.updateClasses_();
     }
   }
 };
@@ -1739,24 +1769,12 @@ MaterialRadio.prototype.onMouseup_ = function(event) {
 
 /**
  * Update classes.
- * @param {HTMLElement} button The button whose classes we should update.
- * @param {HTMLElement} label The label whose classes we should update.
  * @private
  */
-MaterialRadio.prototype.updateClasses_ = function(button, label) {
+MaterialRadio.prototype.updateClasses_ = function() {
   'use strict';
-
-  if (button.disabled) {
-    label.classList.add(this.CssClasses_.IS_DISABLED);
-  } else {
-    label.classList.remove(this.CssClasses_.IS_DISABLED);
-  }
-
-  if (button.checked) {
-    label.classList.add(this.CssClasses_.IS_CHECKED);
-  } else {
-    label.classList.remove(this.CssClasses_.IS_CHECKED);
-  }
+  this.checkDisabled();
+  this.checkToggleState();
 };
 
 /**
@@ -1776,6 +1794,32 @@ MaterialRadio.prototype.blur_ = function(event) {
 // Public methods.
 
 /**
+* Check the components disabled state.
+* @public
+*/
+MaterialRadio.prototype.checkDisabled = function() {
+  'use strict';
+  if (this.btnElement_.disabled) {
+    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
+  }
+};
+
+/**
+* Check the components toggled state.
+* @public
+*/
+MaterialRadio.prototype.checkToggleState = function() {
+  'use strict';
+  if (this.btnElement_.checked) {
+    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
+  }
+};
+
+/**
  * Disable radio.
  * @public
  */
@@ -1783,7 +1827,7 @@ MaterialRadio.prototype.disable = function() {
   'use strict';
 
   this.btnElement_.disabled = true;
-  this.updateClasses_(this.btnElement_, this.element_);
+  this.updateClasses_();
 };
 
 /**
@@ -1794,7 +1838,7 @@ MaterialRadio.prototype.enable = function() {
   'use strict';
 
   this.btnElement_.disabled = false;
-  this.updateClasses_(this.btnElement_, this.element_);
+  this.updateClasses_();
 };
 
 /**
@@ -1805,7 +1849,7 @@ MaterialRadio.prototype.check = function() {
   'use strict';
 
   this.btnElement_.checked = true;
-  this.updateClasses_(this.btnElement_, this.element_);
+  this.updateClasses_();
 };
 
 /**
@@ -1816,7 +1860,7 @@ MaterialRadio.prototype.uncheck = function() {
   'use strict';
 
   this.btnElement_.checked = false;
-  this.updateClasses_(this.btnElement_, this.element_);
+  this.updateClasses_();
 };
 
 /**
@@ -1862,7 +1906,7 @@ MaterialRadio.prototype.init = function() {
     this.btnElement_.addEventListener('blur', this.onBlur_.bind(this));
     this.element_.addEventListener('mouseup', this.onMouseup_.bind(this));
 
-    this.updateClasses_(this.btnElement_, this.element_);
+    this.updateClasses_();
     this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
   }
 };
@@ -2379,24 +2423,12 @@ MaterialSwitch.prototype.onMouseUp_ = function(event) {
 
 /**
  * Handle class updates.
- * @param {HTMLElement} button The button whose classes we should update.
- * @param {HTMLElement} label The label whose classes we should update.
  * @private
  */
 MaterialSwitch.prototype.updateClasses_ = function() {
   'use strict';
-
-  if (this.inputElement_.disabled) {
-    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-  } else {
-    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-  }
-
-  if (this.inputElement_.checked) {
-    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-  } else {
-    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-  }
+  this.checkDisabled();
+  this.checkToggleState();
 };
 
 /**
@@ -2414,6 +2446,32 @@ MaterialSwitch.prototype.blur_ = function(event) {
 };
 
 // Public methods.
+
+/**
+* Check the components disabled state.
+* @public
+*/
+MaterialSwitch.prototype.checkDisabled = function() {
+  'use strict';
+  if (this.inputElement_.disabled) {
+    this.element_.classList.add(this.CssClasses_.IS_DISABLED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
+  }
+};
+
+/**
+* Check the components toggled state.
+* @public
+*/
+MaterialSwitch.prototype.checkToggleState = function() {
+  'use strict';
+  if (this.inputElement_.checked) {
+    this.element_.classList.add(this.CssClasses_.IS_CHECKED);
+  } else {
+    this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
+  }
+};
 
 /**
  * Disable switch.
@@ -3126,7 +3184,7 @@ function MaterialLayout(element) {
  * @private
  */
 MaterialLayout.prototype.Constant_ = {
-  MAX_WIDTH: '(max-width: 850px)',
+  MAX_WIDTH: '(max-width: 1024px)',
   TAB_SCROLL_PIXELS: 100,
 
   MENU_ICON: 'menu',

@@ -1,6 +1,6 @@
 /**
  * material-design-lite - Material Design Components in CSS, JS and HTML
- * @version v1.0.1
+ * @version v1.0.2
  * @license Apache-2.0
  * @copyright 2015 Google, Inc.
  * @link https://github.com/google/material-design-lite
@@ -6454,6 +6454,8 @@ input.mdl-button[type="submit"] {
   .mdl-layout--fixed-drawer:not(.is-small-screen) > .mdl-layout__header {
     margin-left: 240px;
     width: calc(100% - 240px); }
+  .mdl-layout--fixed-drawer > .mdl-layout__header .mdl-layout__header-row {
+    padding-left: 40px; }
   .mdl-layout__header > .mdl-layout-icon {
     position: absolute;
     left: 40px;
