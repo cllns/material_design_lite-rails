@@ -41,12 +41,21 @@ in your `application.scss`.
   @import "material";
 ```
 
+This gem only provides the compiled CSS file from
+[`google/material-design-lite`](https://github.com/google/material-design-lite).
+
+If you're looking for the individual Sass files,
+so you can take only parts of Material Design Lite,
+you should use
+the [`rubysamurai/material_design_lite-sass`](https://github.com/rubysamurai/material_design_lite-sass)
+gem instead.
+
 #### Icons
 Material Design Lite uses a font called 'Material Icons'.
 You can either load this font from google, or host it yourself.
 
 ##### Load font from google
-Add the following line to your `application.html.erb` view layout file, 
+Add the following line to your `application.html.erb` view layout file,
 in the `<head>` section:
 
 ```
@@ -56,7 +65,7 @@ in the `<head>` section:
 **OR**
 
 ##### Host font locally
-Use the `material_icons` gem to [host the font locally](https://github.com/Angelmmiguel/material_icons). 
+Use the `material_icons` gem to [host the font locally](https://github.com/Angelmmiguel/material_icons).
 
 ## Versioning
 
