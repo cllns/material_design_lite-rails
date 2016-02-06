@@ -83,6 +83,7 @@ The first three digits will always be the same as `google/material-design-lite`.
 
 - [ ] Add tests (make sure CSS/JS loads, and check version)
 - [ ] Add view helpers, to ease burden of manually adding all the classes.
+- [ ] Fix issue where you need to manually create `node_modules` directory
 
 ## Contributing
 
