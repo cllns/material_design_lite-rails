@@ -1,0 +1,4 @@
+# See: https://github.com/cllns/npm2gem
+material-design-lite:
+  - material.js
+  - material.css
