@@ -7,7 +7,7 @@ A gemified version of [Google's Material Design Lite](http://www.getmdl.io/) lib
 To your Rails application's Gemfile, add
 
 ```ruby
-gem 'material_design_lite-rails', '~> 1.2'
+gem 'material_design_lite-rails', '~> 1.3'
 ```
 
 And then run
